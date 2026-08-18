@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/MYAzrak/mya-gator/internal/database"
+	"github.com/google/uuid"
 )
 
 func handlerLogin(s *state, cmd command) error {
@@ -54,5 +53,22 @@ func handlerRegister(s *state, cmd command) error {
 
 	fmt.Printf("User '%s' registered successfully!\n", name)
 	fmt.Printf("User Data: %+v\n", user)
+	return nil
+}
+
+// Resets users table.
+// This is useful for testing without the need for goose postgres db_url down then up
+// REMOVE FROM PRODUCTION
+func handlerReset(s *state, cmd command) error {
+	if len(cmd.Args) != 0 {
+		return fmt.Errorf("usage: %s", cmd.Name)
+	}
+
+	err := s.db.TruncateUsersTable(context.Background())
+	if err != nil {
+		return fmt.Errorf("couldn't truncate users table: %w", err)
+	}
+
+	fmt.Printf("Users table truncated successfully!\n")
 	return nil
 }
