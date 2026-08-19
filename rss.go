@@ -8,6 +8,9 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/MYAzrak/mya-gator/internal/database"
+	"github.com/google/uuid"
 )
 
 type RSSFeed struct {
@@ -24,21 +27,6 @@ type RSSItem struct {
 	Link        string `xml:"link"`
 	Description string `xml:"description"`
 	PubDate     string `xml:"pubDate"`
-}
-
-func handlerAgg(s *state, cmd command) error {
-	if len(cmd.Args) != 0 {
-		return fmt.Errorf("usage: %s", cmd.Name)
-	}
-
-	feedURL := "https://www.wagslane.dev/index.xml"
-	feed, err := fetchFeed(context.Background(), feedURL)
-	if err != nil {
-		return fmt.Errorf("couldn't fetch feed: %w", err)
-	}
-	fmt.Printf("Feed: %+v\n", feed)
-
-	return nil
 }
 
 func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
@@ -78,4 +66,48 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	}
 
 	return rssFeed, nil
+}
+
+// Fetches and prints RSS feed data from a predefined feed URL.
+func handlerAgg(s *state, cmd command) error {
+	if len(cmd.Args) != 0 {
+		return fmt.Errorf("usage: %s", cmd.Name)
+	}
+
+	feedURL := "https://www.wagslane.dev/index.xml"
+	feed, err := fetchFeed(context.Background(), feedURL)
+	if err != nil {
+		return fmt.Errorf("couldn't fetch feed: %w", err)
+	}
+	fmt.Printf("Feed: %+v\n", feed)
+
+	return nil
+}
+
+func handlerAddFeed(s *state, cmd command) error {
+	if len(cmd.Args) != 2 {
+		return fmt.Errorf("usage: %s <name> <url>", cmd.Name)
+	}
+
+	feedName, url := cmd.Args[0], cmd.Args[1]
+
+	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("%s couldn't be found: %w", s.cfg.CurrentUserName, err)
+	}
+
+	feed, err := s.db.CreateFeed(context.Background(), database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		Name:      feedName,
+		Url:       url,
+		UserID:    user.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("feed couldn't be created: %w", err)
+	}
+	fmt.Printf("Feed: %+v\n", feed)
+
+	return nil
 }

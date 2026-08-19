@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Switches the current active user in the config if the user exists in the database.
 func handlerLogin(s *state, cmd command) error {
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("usage: %s <name>", cmd.Name)
@@ -30,6 +31,7 @@ func handlerLogin(s *state, cmd command) error {
 	return nil
 }
 
+// Creates a new user in the database and sets them as the current active user.
 func handlerRegister(s *state, cmd command) error {
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("usage: %s <name>", cmd.Name)
@@ -56,7 +58,7 @@ func handlerRegister(s *state, cmd command) error {
 	return nil
 }
 
-// Resets users table.
+// Deletes all user records from users table.
 // This is useful for testing without the need for goose postgres db_url down then up
 // REMOVE FROM PRODUCTION
 func handlerReset(s *state, cmd command) error {
@@ -73,6 +75,7 @@ func handlerReset(s *state, cmd command) error {
 	return nil
 }
 
+// Lists all registered users in the database and highlights the currently active user.
 func handlerUsers(s *state, cmd command) error {
 	if len(cmd.Args) != 0 {
 		return fmt.Errorf("usage: %s", cmd.Name)
