@@ -68,7 +68,7 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	return rssFeed, nil
 }
 
-// Fetches and prints RSS feed data from a predefined feed URL.
+// handlerAgg fetches and prints RSS feed data from a predefined feed URL.
 func handlerAgg(s *state, cmd command) error {
 	if len(cmd.Args) != 0 {
 		return fmt.Errorf("usage: %s", cmd.Name)
@@ -84,6 +84,7 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
+// handlerAddFeed creates and stores a new RSS feed for the current user.
 func handlerAddFeed(s *state, cmd command) error {
 	if len(cmd.Args) != 2 {
 		return fmt.Errorf("usage: %s <name> <url>", cmd.Name)
@@ -116,7 +117,7 @@ func handlerAddFeed(s *state, cmd command) error {
 	return nil
 }
 
-// Prints all the feeds in the feeds table
+// handlerFeeds prints all the feeds in the feeds table
 func handlerFeeds(s *state, cmd command) error {
 	feeds, err := s.db.GetFeeds(context.Background())
 	if err != nil {
