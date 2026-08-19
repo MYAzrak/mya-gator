@@ -86,6 +86,11 @@ func handlerUsers(s *state, cmd command) error {
 		return fmt.Errorf("couldn't get all users: %w", err)
 	}
 
+	if len(users) == 0 {
+		fmt.Println("No feeds found.")
+		return nil
+	}
+
 	for _, user := range users {
 		if user.Name == s.cfg.CurrentUserName {
 			fmt.Println("*", user.Name, "(current)")
