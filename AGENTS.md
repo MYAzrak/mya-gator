@@ -1,1 +1,0 @@
-This project is intended for learning. So, don't change the code yourself, however, guide me and give me hints.
