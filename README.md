@@ -12,12 +12,12 @@
   - [2. Install Goose & Run Migrations](#2-install-goose--run-migrations)
   - [3. (Optional) Install SQLC](#3-optional-install-sqlc)
   - [4. Configure Gator](#4-configure-gator)
-  - [5. Build & Install Gator](#5-build--install-gator)
+  - [5. Install Gator](#5-install-gator)
 - [Usage & Commands](#-usage--commands)
   - [User Management](#user-management)
   - [Feed Management](#feed-management)
-  - [Aggregation](#aggregation)
-- [Configuration Reference](#-configuration-reference)
+  - [Post Browsing & Aggregation](#post-browsing--aggregation)
+- [Configuration Reference](#configuration-reference)
 
 ---
 
@@ -197,19 +197,36 @@ Create a configuration file in your home directory at `~/.gatorconfig.json`:
 
 ---
 
-### 5. Build & Install Gator
+### 5. Install Gator
 
-Install the CLI globally to your `$GOPATH/bin`:
+You can install `gator` using Go:
+
+#### Option A: Install directly via `go install`
+
+```bash
+go install github.com/MYAzrak/mya-gator@latest
+```
+
+#### Option B: Install from source
+
+From the cloned repository root:
 
 ```bash
 go install .
 ```
 
-Or build a local executable binary:
+Or build a local binary:
 
 ```bash
 go build -o gator .
 ```
+
+> [!NOTE]
+> Ensure your Go binary directory (`~/go/bin` or `$GOPATH/bin`) is in your system's `PATH`:
+>
+> ```bash
+> export PATH=$PATH:$(go env GOPATH)/bin
+> ```
 
 ---
 
@@ -222,9 +239,9 @@ Run Gator using the `gator` command (or `./gator` if using a local binary):
 | Command | Arguments | Description |
 | :--- | :--- | :--- |
 | `register` | `<name>` | Register a new user and set as the current active user |
-| `login` | `<name>` | Set the current active user |
-| `users` | — | List all registered users |
-| `reset` | — | Reset database tables (wipes users & feeds) |
+| `login` | `<name>` | Switch active user to an existing username |
+| `users` | — | List all registered users (active user highlighted with `* (current)`) |
+| `reset` | — | Reset database tables (wipes all users, feeds, and posts) |
 
 **Examples:**
 
@@ -238,9 +255,11 @@ gator users
 
 | Command | Arguments | Description |
 | :--- | :--- | :--- |
-| `addfeed` | `<name> <url>` | Add a new RSS feed for the current user |
-| `feeds` | — | List all feeds stored in the database |
-| `follow` | `<url>` | Follow an existing feed |
+| `addfeed` | `<name> <url>` | Add a new RSS feed and automatically follow it for the logged-in user |
+| `feeds` | — | List all feeds stored in the database along with creator information |
+| `follow` | `<url>` | Follow an existing feed by its URL |
+| `following` | — | List all feeds followed by the currently logged-in user |
+| `unfollow` | `<url>` | Unfollow a feed by its URL |
 
 **Examples:**
 
@@ -248,23 +267,30 @@ gator users
 gator addfeed "Boot.dev Blog" "https://blog.boot.dev/index.xml"
 gator feeds
 gator follow "https://blog.boot.dev/index.xml"
+gator following
+gator unfollow "https://blog.boot.dev/index.xml"
 ```
 
-### Aggregation
+### Post Browsing & Aggregation
 
 | Command | Arguments | Description |
 | :--- | :--- | :--- |
-| `agg` | `<time_between_reqs>` | Run the feed scraper continuously at a duration accepted by Go's `time.ParseDuration` (e.g. `1s`, `30s`, `1m`, `1h`) |
+| `agg` | `<time_between_reqs>` | Start continuous background feed aggregation (e.g. `1s`, `30s`, `1m`, `1h`) |
+| `browse` | `[limit]` | View latest posts from followed feeds (optional `limit`, defaults to 2) |
 
-**Example:**
+**Examples:**
 
 ```bash
+# Run feed scraper every 1 minute
 gator agg 1m
+
+# Browse the 5 latest aggregated posts for the active user
+gator browse 5
 ```
 
 ---
 
-## ⚙️ Configuration Reference
+## Configuration Reference
 
 The `~/.gatorconfig.json` file supports the following fields:
 
