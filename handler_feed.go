@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"html"
 	"io"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/MYAzrak/mya-gator/internal/database"
@@ -84,12 +87,44 @@ func scrapeFeeds(s *state) error {
 		return fmt.Errorf("couldn't fetch feed: %w", err)
 	}
 
-	fmt.Println("Getting ", feed.Name)
-	fmt.Println("--------------------------------")
 	for _, item := range rssFeed.Channel.Item {
-		fmt.Println("Title:", item.Title)
+		publishedAt := sql.NullTime{}
+		formats := []string{
+			time.RFC1123Z,
+			time.RFC1123,
+			time.RFC822Z,
+			time.RFC822,
+			time.RFC3339,
+		}
+		for _, format := range formats {
+			if t, err := time.Parse(format, item.PubDate); err == nil {
+				publishedAt = sql.NullTime{
+					Time:  t.UTC(),
+					Valid: true,
+				}
+				break
+			}
+		}
+
+		post, err := s.db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: sql.NullString{String: item.Description, Valid: item.Description != ""},
+			PublishedAt: publishedAt,
+			FeedID:      feed.ID,
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+				continue
+			}
+			log.Printf("couldn't create post: %v", err)
+			continue
+		}
+		fmt.Printf("Created post: %s\n", post.Title)
 	}
-	fmt.Println("--------------------------------")
 
 	return nil
 }
