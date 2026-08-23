@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"html"
@@ -75,14 +74,7 @@ func scrapeFeeds(s *state) error {
 		return fmt.Errorf("couldn't get next feed to fetch: %w", err)
 	}
 
-	err = s.db.MarkFeedFetched(context.Background(), database.MarkFeedFetchedParams{
-		LastFetchedAt: sql.NullTime{
-			Time:  time.Now().UTC(),
-			Valid: true, // Tells PostgreSQL this value is NOT null
-		},
-		UpdatedAt: time.Now().UTC(),
-		ID:        feed.ID,
-	})
+	feed, err = s.db.MarkFeedFetched(context.Background(), feed.ID)
 	if err != nil {
 		return fmt.Errorf("couldn't mark feed as fetched: %w", err)
 	}
