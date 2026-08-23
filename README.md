@@ -254,7 +254,7 @@ gator follow "https://blog.boot.dev/index.xml"
 
 | Command | Arguments | Description |
 | :--- | :--- | :--- |
-| `agg` | `<time_between_reqs>` (e.g. `1m`, `30s`, `1h`) | Run the feed scraper continuously |
+| `agg` | `<time_between_reqs>` | Run the feed scraper continuously at a duration accepted by Go's `time.ParseDuration` (e.g. `1s`, `30s`, `1m`, `1h`) |
 
 **Example:**
 

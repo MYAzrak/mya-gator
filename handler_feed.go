@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"html"
@@ -68,20 +69,55 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	return rssFeed, nil
 }
 
-// handlerAgg fetches and prints RSS feed data from a predefined feed URL.
-func handlerAgg(s *state, cmd command) error {
-	if len(cmd.Args) != 0 {
-		return fmt.Errorf("usage: %s", cmd.Name)
+func scrapeFeeds(s *state) error {
+	feed, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return fmt.Errorf("couldn't get next feed to fetch: %w", err)
 	}
 
-	feedURL := "https://www.wagslane.dev/index.xml"
-	feed, err := fetchFeed(context.Background(), feedURL)
+	err = s.db.MarkFeedFetched(context.Background(), database.MarkFeedFetchedParams{
+		LastFetchedAt: sql.NullTime{
+			Time:  time.Now().UTC(),
+			Valid: true, // Tells PostgreSQL this value is NOT null
+		},
+		UpdatedAt: time.Now().UTC(),
+		ID:        feed.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't mark feed as fetched: %w", err)
+	}
+
+	rssFeed, err := fetchFeed(context.Background(), feed.Url)
 	if err != nil {
 		return fmt.Errorf("couldn't fetch feed: %w", err)
 	}
-	fmt.Printf("Feed: %+v\n", feed)
+
+	fmt.Println("Getting ", feed.Name)
+	fmt.Println("--------------------------------")
+	for _, item := range rssFeed.Channel.Item {
+		fmt.Println("Title:", item.Title)
+	}
+	fmt.Println("--------------------------------")
 
 	return nil
+}
+
+// handlerAgg continuously scrapes feeds at a specified interval.
+func handlerAgg(s *state, cmd command) error {
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("usage: %s <time_between_reqs> (e.g. '1s', '1m', '1h' - valid time.ParseDuration format)", cmd.Name)
+	}
+
+	timeBetweenRequests, err := time.ParseDuration(cmd.Args[0])
+	if err != nil {
+		return fmt.Errorf("invalid duration format %q: expected format accepted by time.ParseDuration (e.g. '1s', '1m', '1h'): %w", cmd.Args[0], err)
+	}
+	fmt.Println("Collecting feeds every", timeBetweenRequests)
+
+	ticker := time.NewTicker(timeBetweenRequests)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+	}
 }
 
 // handlerAddFeed creates and stores a new RSS feed for the current user.
